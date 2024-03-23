@@ -36,7 +36,11 @@
         "node/no-unsupported-features/es-syntax": "off",
         "node/no-missing-import": "off",
         "no-dupe-class-members": "off",
-        "require-atomic-updates": "warn"
+        "require-atomic-updates": "warn",
+        "node/no-extraneous-import": ["error", {
+          // body-parser comes with express
+          "allowModules": ["body-parser"]
+        }]
       },
       "parserOptions": {
         "sourceType": "module"
