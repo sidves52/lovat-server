@@ -3,8 +3,12 @@ import axios from "axios";
 import { AuthenticatedRequest } from "../../lib/middleware/requireAuth";
 import { User } from "@prisma/client";
 
-export const rankFlag = async (user: User, teamKey: string, eventKey: string) => {
-    const url = 'https://www.thebluealliance.com/api/v3';
+export const rankFlag = async (
+    user: User,
+    teamKey: string,
+    eventKey: string
+) => {
+    const url = "https://www.thebluealliance.com/api/v3";
 
     if (eventKey === undefined) {
         return 0;
@@ -12,7 +16,7 @@ export const rankFlag = async (user: User, teamKey: string, eventKey: string) =>
 
     try {
         const response = await axios.get(`${url}/event/${eventKey}/rankings`, {
-            headers: { 'X-TBA-Auth-Key': process.env.TBA_KEY }
+            headers: { "X-TBA-Auth-Key": process.env.TBA_KEY }
         });
 
         const rankings = response.data.rankings;
@@ -25,6 +29,6 @@ export const rankFlag = async (user: User, teamKey: string, eventKey: string) =>
         return 0;
     } catch (err) {
         // console.error("Error fetching rankings:", err);
-        return 0; 
+        return 0;
     }
 };
