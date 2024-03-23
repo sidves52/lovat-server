@@ -5,6 +5,9 @@
         "outDir": "dist",
         "moduleResolution": "node",
         "esModuleInterop": true,
+        "noImplicitAny": true,
+        "noImplicitOverride": true,
+        "noImplicitReturns": true
     },
     "include": ["src/**/*"],
 }

@@ -1,0 +1,46 @@
+{
+  "root": true,
+  "env": {
+    "es2019": true
+  },
+  "plugins": [
+    "node",
+    "prettier"
+  ],
+  "extends": [
+    "eslint:recommended",
+    "plugin:node/recommended",
+    "plugin:prettier/recommended",
+    "prettier"
+  ],
+  "rules": {
+    "prettier/prettier": "error",
+    "eqeqeq": "error",
+    "prefer-const": "error",
+    "no-var": "error",
+    "no-process-exit": "off"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.ts", "**/*.tsx"],
+      "parser": "@typescript-eslint/parser",
+      "extends": [
+        "plugin:@typescript-eslint/recommended"
+      ],
+      "rules": {
+        "@typescript-eslint/ban-ts-comment": "warn",
+        "@typescript-eslint/explicit-function-return-type": "off",
+        "@typescript-eslint/explicit-module-boundary-types": "off",
+        "@typescript-eslint/no-unused-vars": "off",
+        "@typescript-eslint/no-var-requires": "off",
+        "node/no-unsupported-features/es-syntax": "off",
+        "node/no-missing-import": "off",
+        "no-dupe-class-members": "off",
+        "require-atomic-updates": "warn"
+      },
+      "parserOptions": {
+        "sourceType": "module"
+      }
+    }
+  ]
+}
