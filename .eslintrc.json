@@ -37,6 +37,7 @@
         "node/no-missing-import": "off",
         "no-dupe-class-members": "off",
         "require-atomic-updates": "warn",
+        "node/no-unsupported-features/node-builtins": "off",
         "node/no-extraneous-import": ["error", {
           // body-parser comes with express
           "allowModules": ["body-parser"]
