@@ -1,17 +1,24 @@
-import { createHmac } from 'crypto';
-import { Request, Response, NextFunction } from 'express';
+import { createHmac } from "crypto";
+import { Request, Response, NextFunction } from "express";
 
 const LOVAT_SIGNING_KEY = process.env.LOVAT_SIGNING_KEY;
 
-const requireLovatSignature = (req: Request, res: Response, next: NextFunction) => {
-    const signature = req.headers['x-signature'] as string | undefined;
-    const timestamp = parseInt(req.headers['x-timestamp'] as string | undefined);
+const requireLovatSignature = (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    const signature = req.headers["x-signature"] as string | undefined;
+    const timestamp = parseInt(
+        req.headers["x-timestamp"] as string | undefined
+    );
     const { method, path } = req;
 
-    const body = JSON.stringify(req.body) === '{}' ? '' : JSON.stringify(req.body);
+    const body =
+        JSON.stringify(req.body) === "{}" ? "" : JSON.stringify(req.body);
 
     if (!signature || !timestamp || isNaN(timestamp)) {
-        res.status(401).send('Unauthorized');
+        res.status(401).send("Unauthorized");
         return;
     }
 
@@ -21,18 +28,18 @@ const requireLovatSignature = (req: Request, res: Response, next: NextFunction) 
     const diff = now.getTime() - timestampDate.getTime();
     const diffMinutes = Math.floor(diff / 1000 / 60);
     if (diffMinutes > 5) {
-        res.status(401).send('Unauthorized');
+        res.status(401).send("Unauthorized");
         return;
     }
 
-    const generatedSignature = createHmac('sha256', LOVAT_SIGNING_KEY)
+    const generatedSignature = createHmac("sha256", LOVAT_SIGNING_KEY)
         .update(JSON.stringify({ path, method, body, timestamp }))
-        .digest('hex');
+        .digest("hex");
 
     if (signature === generatedSignature) {
         next();
     } else {
-        res.status(401).send('Unauthorized');
+        res.status(401).send("Unauthorized");
     }
 };
 

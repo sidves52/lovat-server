@@ -1,16 +1,20 @@
 import prisma from "../../prismaClient";
 import axios from "axios";
-import { User } from '@prisma/client';
-import { Request as ExpressRequest } from 'express';
-import * as jose from 'jose';
+import { User } from "@prisma/client";
+import { Request as ExpressRequest, Response, NextFunction } from "express";
+import * as jose from "jose";
 
 export interface AuthenticatedRequest extends ExpressRequest {
     user: User;
 }
 
-export const requireAuth = async (req: AuthenticatedRequest, res, next) => {
+export const requireAuth = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+) => {
     try {
-        console.log(`${req.method} ${req.path}`)
+        console.log(`${req.method} ${req.path}`);
         // Validate JWT
         const tokenString = req.headers.authorization?.split(" ")[1]; // It would be in the format "Bearer <token>" so we split on the space and take the second part
 
@@ -20,12 +24,20 @@ export const requireAuth = async (req: AuthenticatedRequest, res, next) => {
         }
 
         try {
-            const JWKS = jose.createRemoteJWKSet(new URL(`https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`));
+            const JWKS = jose.createRemoteJWKSet(
+                new URL(
+                    `https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`
+                )
+            );
 
-            const { payload, protectedHeader } = await jose.jwtVerify(tokenString, JWKS, {
-                issuer: `https://${process.env.AUTH0_DOMAIN}/`,
-                audience: "https://api.lovat.app",
-            });
+            const { payload, protectedHeader } = await jose.jwtVerify(
+                tokenString,
+                JWKS,
+                {
+                    issuer: `https://${process.env.AUTH0_DOMAIN}/`,
+                    audience: "https://api.lovat.app"
+                }
+            );
         } catch (error) {
             res.status(401).send("Invalid authorization token");
             return;
@@ -38,32 +50,35 @@ export const requireAuth = async (req: AuthenticatedRequest, res, next) => {
 
         // Get user info from Auth0
         try {
-            const authResponse = await axios.get(`https://${process.env.AUTH0_DOMAIN}/userinfo`, {
-                headers: {
-                    "Authorization": `Bearer ${tokenString}`,
-                    "Content-Type": "application/json",
-                },
-            });
+            const authResponse = await axios.get(
+                `https://${process.env.AUTH0_DOMAIN}/userinfo`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${tokenString}`,
+                        "Content-Type": "application/json"
+                    }
+                }
+            );
 
-            console.log("Updating")
+            console.log("Updating");
             // Get JSON
             const authData = authResponse.data;
 
             // Update database
             const user = await prisma.user.upsert({
                 where: {
-                    id: userId,
+                    id: userId
                 },
                 update: {
                     email: authData.email,
-                    emailVerified: authData.email_verified,
+                    emailVerified: authData.email_verified
                 },
                 create: {
                     id: userId,
                     email: authData.email,
                     emailVerified: authData.email_verified,
-                    role: "ANALYST",
-                },
+                    role: "ANALYST"
+                }
             });
 
             // Add user to request
@@ -71,16 +86,16 @@ export const requireAuth = async (req: AuthenticatedRequest, res, next) => {
 
             next();
         } catch (error) {
-            console.log("Using existing")
+            console.log("Using existing");
             const user = await prisma.user.findUnique({
                 where: {
-                    id: userId,
+                    id: userId
                 }
             });
 
             if (!user) {
                 res.status(500).send("Internal server error");
-                return
+                return;
             }
 
             req.user = user;

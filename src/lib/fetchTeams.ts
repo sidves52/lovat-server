@@ -7,10 +7,10 @@ export default async function fetchTeams() {
 
     const url = "https://www.thebluealliance.com/api/v3";
 
-    const fetchTeamPage = async (page: number) => await axios.get(
-        `${url}/teams/${page}/simple`,
-        { headers: { "X-TBA-Auth-Key": process.env.TBA_KEY } }
-    );
+    const fetchTeamPage = async (page: number) =>
+        await axios.get(`${url}/teams/${page}/simple`, {
+            headers: { "X-TBA-Auth-Key": process.env.TBA_KEY }
+        });
 
     // Keep going until we get an empty page
     let page = 0;
@@ -25,20 +25,19 @@ export default async function fetchTeams() {
             for (const team of response.data) {
                 await prisma.team.upsert({
                     where: {
-                        number: team.team_number,
+                        number: team.team_number
                     },
                     update: {
-                        name: team.nickname,
+                        name: team.nickname
                     },
                     create: {
                         number: team.team_number,
-                        name: team.nickname,
-                    },
+                        name: team.nickname
+                    }
                 });
             }
         }
 
         page++;
     }
-
 }
