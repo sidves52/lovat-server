@@ -1,48 +1,46 @@
 import { Request, Response } from "express";
-import prismaClient from '../../../prismaClient'
-import z from 'zod'
+import prismaClient from "../../../prismaClient";
+import z from "zod";
 import { AuthenticatedRequest } from "../../../lib/middleware/requireAuth";
 import { singleMatchEventsAverage } from "./singleMatchEventsAverage";
 import { arrayAndAverageTeam } from "./arrayAndAverageTeam";
 import { roleMap } from "../analysisConstants";
 import { User } from "@prisma/client";
 
-
-export const robotRole = async (user: User, team: number): Promise<{mainRole : string}> => {
+export const robotRole = async (
+    user: User,
+    team: number
+): Promise<{ mainRole: string }> => {
     try {
-        const params = z.object({
-            team: z.number()
-        }).safeParse({
-            team: team
-        })
+        const params = z
+            .object({
+                team: z.number()
+            })
+            .safeParse({
+                team: team
+            });
         if (!params.success) {
-            throw (params)
-        };
+            throw params;
+        }
         const roles = await prismaClient.scoutReport.groupBy({
-            by: ['robotRole'],
-            _count:
-            {
+            by: ["robotRole"],
+            _count: {
                 robotRole: true
             },
-            where:
-            {
-                scouter:
-                {
-                    sourceTeamNumber:
-                    {
+            where: {
+                scouter: {
+                    sourceTeamNumber: {
                         in: user.teamSource
                     }
                 },
-                teamMatchData:
-                {
-                    tournamentKey:
-                    {
+                teamMatchData: {
+                    tournamentKey: {
                         in: user.tournamentSource
                     },
                     teamNumber: params.data.team
                 }
             }
-        })
+        });
         let eventTypeWithMostOccurrences = null;
         let maxCount = 0;
         for (const element of roles) {
@@ -50,16 +48,12 @@ export const robotRole = async (user: User, team: number): Promise<{mainRole : s
                 maxCount = element._count.robotRole;
                 eventTypeWithMostOccurrences = element.robotRole;
             }
-        };
-        return {
-            mainRole : roleMap[eventTypeWithMostOccurrences]
         }
-
-
+        return {
+            mainRole: roleMap[eventTypeWithMostOccurrences]
+        };
+    } catch (error) {
+        console.error(error);
+        throw error;
     }
-    catch (error) {
-        console.error(error)
-        throw (error)
-    }
-
 };

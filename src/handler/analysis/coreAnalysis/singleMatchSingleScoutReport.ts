@@ -1,33 +1,38 @@
 import { Request, Response } from "express";
-import prismaClient from '../../../prismaClient'
-import z from 'zod'
+import prismaClient from "../../../prismaClient";
+import z from "zod";
 import { AuthenticatedRequest } from "../../../lib/middleware/requireAuth";
-import { driverAbility, highNoteMap, matchTimeEnd, metricToEvent, stageMap, teleopStart } from "../analysisConstants";
+import {
+    driverAbility,
+    highNoteMap,
+    matchTimeEnd,
+    metricToEvent,
+    stageMap,
+    teleopStart
+} from "../analysisConstants";
 import { sum } from "simple-statistics";
 import { EventAction, Position, User } from "@prisma/client";
 import { match } from "assert";
 import { time } from "console";
 
-
-
-export const singleMatchSingleScoutReport = async (user: User, isPointAverage: boolean, scoutReportUuid: string, metric1: string, timeMin: number = 0, timeMax: number = matchTimeEnd): Promise<number> => {
+export const singleMatchSingleScoutReport = async (
+    user: User,
+    isPointAverage: boolean,
+    scoutReportUuid: string,
+    metric1: string,
+    timeMin: number = 0,
+    timeMax: number = matchTimeEnd
+): Promise<number> => {
     try {
-        let position = null
-        if(metric1 === "ampscores"  || metric1 === "ampScores")
-        {
-            position = Position.AMP
-        }
-        else if(metric1 === "speakerscores" || metric1 === "speakerScores")
-        {
-            position = Position.SPEAKER
-        }
-        else if(metric1 === "trapscores" || metric1 === "trapScores")
-        {
-            position = Position.TRAP
-        }
-        else
-        {
-            position = Position.NONE
+        let position = null;
+        if (metric1 === "ampscores" || metric1 === "ampScores") {
+            position = Position.AMP;
+        } else if (metric1 === "speakerscores" || metric1 === "speakerScores") {
+            position = Position.SPEAKER;
+        } else if (metric1 === "trapscores" || metric1 === "trapScores") {
+            position = Position.TRAP;
+        } else {
+            position = Position.NONE;
         }
 
         // const params = z.object({
@@ -38,7 +43,7 @@ export const singleMatchSingleScoutReport = async (user: User, isPointAverage: b
         //     matchKey: matchKey,
         //     metric: metric1
         // })
-        const metric = metricToEvent[metric1][0]
+        const metric = metricToEvent[metric1][0];
         // if (metric1 === "stage") {
         //     const scoutReports = await prismaClient.scoutReport.findMany({
         //         where:
@@ -70,154 +75,136 @@ export const singleMatchSingleScoutReport = async (user: User, isPointAverage: b
         //     }
         //     return stagePointsAverage
         // }
-        if(metric1=== "scores")
-        {
+        if (metric1 === "scores") {
             const match = await prismaClient.event.aggregate({
-                _count:
-                {
+                _count: {
                     _all: true
                 },
-                where:
-                {
+                where: {
                     scoutReport: {
-                        uuid : scoutReportUuid
+                        uuid: scoutReportUuid
                     },
                     action: "SCORE",
-                    time:
-                    {
+                    time: {
                         lte: timeMax,
                         gte: timeMin
-                    },
+                    }
                 }
-            })
-            
-            return match._count._all
-        
+            });
+
+            return match._count._all;
         }
-        if(metric1 === "pickups")
-        {
+        if (metric1 === "pickups") {
             const match = await prismaClient.event.aggregate({
-                _count:
-                {
+                _count: {
                     _all: true
                 },
-                where:
-                {
+                where: {
                     scoutReport: {
-                        uuid : scoutReportUuid
+                        uuid: scoutReportUuid
                     },
                     action: "PICK_UP",
-                    time:
-                    {
+                    time: {
                         lte: timeMax,
                         gte: timeMin
-                    },
+                    }
                 }
-            })
-            
-            return match._count._all
-        }
-        else if (metric1 === "driverability") {
+            });
 
+            return match._count._all;
+        } else if (metric1 === "driverability") {
             const match = await prismaClient.scoutReport.findUnique({
-               
-                where:
-                {
-                    uuid : scoutReportUuid
+                where: {
+                    uuid: scoutReportUuid
                 }
-            })
+            });
             //avg could be multiple results from one scout
-            return match.driverAbility
-        }
-        else if (isPointAverage) {
+            return match.driverAbility;
+        } else if (isPointAverage) {
             const sumOfMatches = await prismaClient.event.aggregate({
-                _sum:
-                {
+                _sum: {
                     points: true
                 },
-                where:
-                {
+                where: {
                     scoutReport: {
-                        uuid : scoutReportUuid
-
+                        uuid: scoutReportUuid
                     },
                     //no need for action, either has points or has 0
                     // action:{
                     //     in : pointMetrics
                     // },
-                    time:
-                    {
+                    time: {
                         lte: timeMax,
                         gte: timeMin
                     }
-
                 }
-            })
-            let eventsAverage = sumOfMatches._sum.points
-            if(!eventsAverage)
-            {
-                eventsAverage = 0
+            });
+            let eventsAverage = sumOfMatches._sum.points;
+            if (!eventsAverage) {
+                eventsAverage = 0;
             }
             //adds endgame points if nessisary
             if (metric1 === "totalpoints" || metric1 === "teleoppoints") {
                 const element = await prismaClient.scoutReport.findUnique({
-                    where:
-                    {
-                        uuid : scoutReportUuid
+                    where: {
+                        uuid: scoutReportUuid
                     }
-                })
-                let stagePoints = stageMap[element.stage] + highNoteMap[element.highNote]
-                if(!stagePoints)
-                {
-                    stagePoints = 0
+                });
+                let stagePoints =
+                    stageMap[element.stage] + highNoteMap[element.highNote];
+                if (!stagePoints) {
+                    stagePoints = 0;
                 }
-                return eventsAverage + stagePoints
+                return eventsAverage + stagePoints;
+            } else {
+                return eventsAverage;
             }
-            else
-            {
-                return eventsAverage
-            }
-        }
-       
-        else {
-            const params = z.object({
-                metric: z.enum([EventAction.PICK_UP, EventAction.DEFENSE, EventAction.DROP_RING, EventAction.FEED_RING, EventAction.LEAVE, EventAction.SCORE]),
-                position : z.enum([Position.NONE, Position.AMP, Position.TRAP, Position.SPEAKER])
-            }).safeParse({
-                metric: metric,
-                position : position
-            })
+        } else {
+            const params = z
+                .object({
+                    metric: z.enum([
+                        EventAction.PICK_UP,
+                        EventAction.DEFENSE,
+                        EventAction.DROP_RING,
+                        EventAction.FEED_RING,
+                        EventAction.LEAVE,
+                        EventAction.SCORE
+                    ]),
+                    position: z.enum([
+                        Position.NONE,
+                        Position.AMP,
+                        Position.TRAP,
+                        Position.SPEAKER
+                    ])
+                })
+                .safeParse({
+                    metric: metric,
+                    position: position
+                });
             if (!params.success) {
-                throw (params)
-            };
+                throw params;
+            }
 
             const match = await prismaClient.event.aggregate({
-                _count:
-                {
+                _count: {
                     _all: true
                 },
-                where:
-                {
+                where: {
                     scoutReport: {
-                        uuid : scoutReportUuid
+                        uuid: scoutReportUuid
                     },
                     action: params.data.metric,
-                    time:
-                    {
+                    time: {
                         lte: timeMax,
                         gte: timeMin
                     },
-                    position : position
-
+                    position: position
                 }
-            })
-            return match._count._all
-
+            });
+            return match._count._all;
         }
+    } catch (error) {
+        console.error(error.error);
+        throw error;
     }
-    catch (error) {
-        console.error(error.error)
-        throw (error)
-    }
-
 };

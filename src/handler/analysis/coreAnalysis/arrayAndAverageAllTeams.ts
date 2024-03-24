@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import prismaClient from '../../../prismaClient'
-import z from 'zod'
+import prismaClient from "../../../prismaClient";
+import z from "zod";
 import { AuthenticatedRequest } from "../../../lib/middleware/requireAuth";
 import { singleMatchEventsAverage } from "./singleMatchEventsAverage";
 import { autoEnd, matchTimeEnd, teleopStart } from "../analysisConstants";
@@ -8,66 +8,64 @@ import { error, time } from "console";
 import { Position } from "@prisma/client";
 import { arrayAndAverageTeamFast } from "./arrayAndAverageTeamFast";
 
-
-export const arrayAndAverageAllTeam = async (req: AuthenticatedRequest, metric: string): Promise<{ average: number, timeLine: Array<number> }> => {
+export const arrayAndAverageAllTeam = async (
+    req: AuthenticatedRequest,
+    metric: string
+): Promise<{ average: number; timeLine: Array<number> }> => {
     try {
         return new Promise(async (resolve, reject) => {
             const teams = await prismaClient.scoutReport.findMany({
-                where:
-                {
-                    scouter:
-                    {
-                        sourceTeamNumber:
-                        {
+                where: {
+                    scouter: {
+                        sourceTeamNumber: {
                             in: req.user.teamSource
                         }
                     },
-                    teamMatchData:
-                    {
-                        tournamentKey:
-                        {
+                    teamMatchData: {
+                        tournamentKey: {
                             in: req.user.tournamentSource
                         }
                     }
                 },
-                include:
-                {
+                include: {
                     teamMatchData: true
                 }
-            })
+            });
             const uniqueTeams: Set<number> = new Set();
 
             for (const element of teams) {
                 if (element) {
                     uniqueTeams.add(element.teamMatchData.teamNumber);
                 }
-            };
+            }
             const uniqueTeamsArray: Array<number> = Array.from(uniqueTeams);
-            let timeLineArray = []
+            let timeLineArray = [];
             for (const element of uniqueTeamsArray) {
-                const currAvg = ( arrayAndAverageTeamFast(req.user, metric, element))
-                timeLineArray = timeLineArray.concat(currAvg)
-            };
+                const currAvg = arrayAndAverageTeamFast(
+                    req.user,
+                    metric,
+                    element
+                );
+                timeLineArray = timeLineArray.concat(currAvg);
+            }
             //change to null possibly
-            let average = 0
+            let average = 0;
 
-            await Promise.all(timeLineArray).then((values) => {
-
+            await Promise.all(timeLineArray).then(values => {
                 if (timeLineArray.length !== 0) {
-                    average = values.reduce((acc, cur) => acc + cur.average, 0) / values.length;
+                    average =
+                        values.reduce((acc, cur) => acc + cur.average, 0) /
+                        values.length;
                 }
                 timeLineArray = values.map(item => item.average);
             });
-            resolve( {
+            resolve({
                 average: average,
                 timeLine: timeLineArray
-            })
-
-        })
+            });
+        });
+    } catch (error) {
+        console.log(error);
+        throw error;
     }
-    catch (error) {
-        console.log(error)
-        throw (error)
-    }
-
 };
