@@ -25,10 +25,9 @@ export const autoPathsTeam = async (user: User, teamNumber: number) => {
         };
 
         type AutoData = {
-            autoPoints: number;
+            score: number;
             positions: Position[];
             match: string;
-            score: Array<number>;
             tournamentName: string;
         };
 
@@ -47,6 +46,7 @@ export const autoPathsTeam = async (user: User, teamNumber: number) => {
 
             return isSubset(listOne, listTwo) || isSubset(listTwo, listOne);
         };
+
         const groupAutoData = (
             data: AutoData[]
         ): {
@@ -67,18 +67,18 @@ export const autoPathsTeam = async (user: User, teamNumber: number) => {
             data.forEach(item => {
                 let isGrouped = false;
 
+                // This could probably be performance optimized? Looping over multiple arrays multiple times
                 for (const group of groups) {
                     if (isSubsetPositions(item.positions, group.positions)) {
                         if (item.positions.length > group.positions.length) {
                             group.positions = item.positions;
                         }
+
                         group.matches.add(item.match);
                         group.matchDetails.set(item.match, item.tournamentName);
-                        group.score.push(item.autoPoints);
-                        group.maxScore = Math.max(
-                            group.maxScore,
-                            item.autoPoints
-                        );
+                        group.score.push(item.score);
+                        group.maxScore = Math.max(group.maxScore, item.score);
+
                         isGrouped = true;
                         break;
                     }
@@ -90,8 +90,8 @@ export const autoPathsTeam = async (user: User, teamNumber: number) => {
                     groups.push({
                         positions: item.positions,
                         matches: new Set([item.match]),
-                        score: [item.autoPoints],
-                        maxScore: item.autoPoints,
+                        score: [item.score],
+                        maxScore: item.score,
                         matchDetails: matchDetails
                     });
                 }
@@ -124,13 +124,15 @@ export const autoPathsTeam = async (user: User, teamNumber: number) => {
                 }
             }
         });
+
         const autoPaths = [];
         for (const element of matches) {
-            const currAutoPath = await autoPathSingleMatchSingleScoutReport(
-                user,
-                element.teamMatchKey,
-                element.uuid
-            );
+            const currAutoPath: AutoData =
+                await autoPathSingleMatchSingleScoutReport(
+                    user,
+                    element.teamMatchKey,
+                    element.uuid
+                );
             if (currAutoPath.positions.length > 0) {
                 autoPaths.push(currAutoPath);
             }

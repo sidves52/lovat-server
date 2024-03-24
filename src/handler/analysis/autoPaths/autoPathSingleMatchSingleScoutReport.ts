@@ -56,9 +56,9 @@ export const autoPathSingleMatchSingleScoutReport = async (
         }));
 
         return {
-            autoPoints: totalScore,
             positions: positions,
             match: matchKey,
+            score: totalScore,
             tournamentName: match.tournament.name
         };
     } catch (error) {
